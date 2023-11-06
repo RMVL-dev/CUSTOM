@@ -16,15 +16,15 @@ class MainActivity : AppCompatActivity() {
         binding.myCustomView.setValues(
             values = listOf(
                 100,
-                25,
-                6,
-                100,
-                75,
-                46,
-                8,
-                15,
-                95
-            )
+                //25,
+                //6,
+                //100,
+                //75,
+                //46,
+                //8,
+                //15,
+                //100
+            ).reversed()
         )
     }
 }
