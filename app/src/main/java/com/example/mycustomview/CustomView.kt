@@ -22,13 +22,13 @@ class CustomView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     private val TEXT_SIZE = context.spToPx(12)
-    private val COLUMN_WIDTH = context.dpToPx(6)
+    private val COLUMN_WIDTH = context.dpToPx(4)
 
     private var _listOfValues:List<Int>? = emptyList()
     private val listOfValues:List<Int> get() = _listOfValues!!
     private var height = resources.getDimensionPixelSize(R.dimen.custom_view_height)
     private var width = resources.getDimensionPixelSize(R.dimen.custom_view_width)
-    private var top = 100f
+    private var topPoint = 100f
     private var lineColor = Color.BLACK
     private var dateColor = Color.WHITE
 
@@ -41,20 +41,10 @@ class CustomView @JvmOverloads constructor(
         textSize = TEXT_SIZE
     }
 
-
-
-    //private val animation = ValueAnimator.ofFloat(0f, 100f).apply {
-    //    duration = 1000
-    //    addUpdateListener {
-    //        top = it.animatedValue as Float
-    //        invalidate()
-    //    }
-    //}
-
     private val animation = ValueAnimator.ofFloat(0f, 100f).apply {
         duration = 1000
         addUpdateListener {
-            top = (it.animatedValue as Float)
+            topPoint = (it.animatedValue as Float)
             invalidate()
         }
 
@@ -96,8 +86,8 @@ class CustomView @JvmOverloads constructor(
         typedArray.recycle()
     }
 
-    fun setValues(values:List<Int>){
-        _listOfValues = values
+    fun setData(data:List<Int>){
+        _listOfValues = data
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -107,99 +97,30 @@ class CustomView @JvmOverloads constructor(
         setMeasuredDimension(width, height)
     }
 
-
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        repeat(listOfValues.size) {
-            val date = getDate(0)
 
-            //val offset =
-            //    ((width - COLUMN_WIDTH * listOfValues.size) / (listOfValues.size + 1)) * (listOfValues.size + 1)
-            val offset = ((width-COLUMN_WIDTH*listOfValues.size)/(listOfValues.size+1))*(it+1)
-            Log.d("offset", "offset $offset width $width")
+        repeat(listOfValues.size) {iterator ->
 
-            val progressTextStartPoint =
-                findTextStartPoint(listOfValues[0].toString(), offset, mainPaint)
-            val dateTextStartPoint = findTextStartPoint(date, offset, datePaint)
+            val date = getDate(iterator)
 
             /**
-             * расчеты размеров столбца:
-             *      находим цену деления столбца, учитывая отступы сверху и снизу (по 50 пикселей)
-             *      задаем отсутп сверху
-             *      находим верхнюю точку столца просчитыая разницу между нижней точкой и размером столбца (значение из массива * цену деления)
+             * Обсчет отступа столбцов друг от друга
+             * ((все пр-во - полезное пр-во) / кол-во пробелов) * счетчик + длинна столбцов отрисованных
              */
-            val columnOnePoint = (height - 100) / 100
-            val bottom = height - 50f
-            //top = bottom - columnOnePoint*listOfValues[0] height - 50f - columnOnePoint*listOfValues[0]
-            /**
-             * Отрисовка компонента
-             */
+            val offset = (width-COLUMN_WIDTH*listOfValues.size)/(listOfValues.size+1)*(iterator+1) + COLUMN_WIDTH*iterator
 
-            canvas.drawText(
-                listOfValues[it].toString(),
-                progressTextStartPoint,
-                top - 10f,
-                mainPaint
+            Log.d("offset", "offset $offset width $width col width - $COLUMN_WIDTH")
+
+            drawOneItem(
+                percent = listOfValues[iterator],
+                start = offset,
+                canvas = canvas,
+                date = date
             )
-            canvas.drawRoundRect(
-                offset,
-                top,
-                offset + COLUMN_WIDTH,
-                bottom,
-                COLUMN_WIDTH,
-                COLUMN_WIDTH,
-                mainPaint
-            )
-            canvas.drawText(date, dateTextStartPoint, bottom + 30f, datePaint)
+
         }
     }
-
-    //override fun onDraw(canvas: Canvas) {
-    //    super.onDraw(canvas)
-    //    repeat(listOfValues.size) {iterator ->
-//
-    //        val date = getDate(iterator)
-    //        val dateWidth = datePaint.measureText(date)
-    //        //val offset = ((width - COLUMN_WIDTH*listOfValues.size)/listOfValues.size)
-//
-    //        //val offset = (COLUMN_WIDTH + (dateWidth-COLUMN_WIDTH) + ((width-(dateWidth*listOfValues.size))/(listOfValues.size+1)))*(iterator+1)
-    //        val offset = ((width-COLUMN_WIDTH*listOfValues.size)/(listOfValues.size+1))*(iterator+1)
-    //        Log.d("offset", "offset $offset width $width")
-    //        //Log.d("offset", "y = ${((width-(dateWidth*listOfValues.size))/listOfValues.size)}  " +
-    //        //        "z = ${((dateWidth-COLUMN_WIDTH))} " +
-    //        //        "c = $COLUMN_WIDTH offset = $offset width - $width date width - $dateWidth")
-    //        //drawOneItem(
-    //        //    percent = listOfValues[iterator],
-    //        //    start = offset,
-    //        //    canvas = canvas,
-    //        //    date = date
-    //        //)
-//
-    //        val progressTextStartPoint = findTextStartPoint(listOfValues[iterator].toString(), offset, mainPaint)
-    //        val dateTextStartPoint = findTextStartPoint(date, offset, datePaint)
-//
-    //        /**
-    //         * расчеты размеров столбца:
-    //         *      находим цену деления столбца, учитывая отступы сверху и снизу (по 50 пикселей)
-    //         *      задаем отсутп сверху
-    //         *      находим верхнюю точку столца просчитыая разницу между нижней точкой и размером столбца (значение из массива * цену деления)
-    //         */
-//
-    //        val columnOnePoint = (height-100)/100
-    //        val bottom = height-50f
-    //        top = bottom - columnOnePoint*listOfValues[iterator]
-//
-//
-    //        /**
-    //         * Отрисовка компонента
-    //         */
-    //        //val startPoint =
-    //        canvas.drawText(listOfValues[iterator].toString(),progressTextStartPoint, top-10f ,mainPaint)
-    //        canvas.drawRoundRect(offset,top, offset+COLUMN_WIDTH,bottom,COLUMN_WIDTH,COLUMN_WIDTH, mainPaint )
-    //        canvas.drawText(date,dateTextStartPoint, bottom+30f ,datePaint)
-//
-    //    }
-    //}
 
     private fun drawOneItem(
         percent:Int, // высота столбика
@@ -218,28 +139,19 @@ class CustomView @JvmOverloads constructor(
          *      находим верхнюю точку столца просчитыая разницу между нижней точкой и размером столбца (значение из массива * цену деления)
          */
 
-        val columnOnePoint = (height-100)/100
         val bottom = height-50f
-        top = bottom - columnOnePoint*percent
+        topPoint = bottom - ((height-100)/100)*percent
 
 
         /**
          * Отрисовка компонента
          */
-        //val startPoint =
-        canvas.drawText(percent.toString(),progressTextStartPoint, top-10f ,mainPaint)
-        canvas.drawRoundRect(start,top, start+COLUMN_WIDTH,bottom,COLUMN_WIDTH,COLUMN_WIDTH, mainPaint )
+        canvas.drawText(percent.toString(),progressTextStartPoint, topPoint-10f ,mainPaint)
+        canvas.drawRoundRect(start,topPoint, start+COLUMN_WIDTH,bottom,COLUMN_WIDTH,COLUMN_WIDTH, mainPaint )
         canvas.drawText(date,dateTextStartPoint, bottom+30f ,datePaint)
     }
 
-    private fun animationStart(){
-        val animation = ValueAnimator.ofFloat(height-50f, 100f).apply {
-            duration = 1000
-            addUpdateListener {
-                top = it.animatedValue as Float
-                invalidate()
-            }
-        }
+    fun animationStart(){
         animation.start()
     }
 

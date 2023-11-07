@@ -13,17 +13,17 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.myCustomView.setValues(
-            values = listOf(
+        binding.myCustomView.setData(
+            data = listOf(
+                25,
+                25,
+                6,
                 100,
-                //25,
-                //6,
-                //100,
-                //75,
-                //46,
-                //8,
-                //15,
-                //100
+                75,
+                46,
+                8,
+                15,
+                100
             ).reversed()
         )
     }
