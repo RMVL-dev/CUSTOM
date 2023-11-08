@@ -4,5 +4,7 @@
         <attr name="line_color" format="color"/>
         <attr name="date_text_color" format="color"/>
         <attr name="line_weight" format="dimension"/>
+        <attr name="values_text_size" format="dimension"/>
+        <attr name="dates_text_size" format="dimension"/>
     </declare-styleable>
 </resources>

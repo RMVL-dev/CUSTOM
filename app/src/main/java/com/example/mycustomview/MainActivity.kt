@@ -15,16 +15,17 @@ class MainActivity : AppCompatActivity() {
 
         binding.myCustomView.setData(
             data = listOf(
-                25,
-                25,
-                6,
-                100,
-                75,
-                46,
-                8,
+                5,
                 15,
+                25,
+                35,
+                45,
+                55,
+                65,
+                75,
                 100
-            ).reversed()
+            )
         )
+
     }
 }

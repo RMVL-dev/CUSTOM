@@ -5,14 +5,11 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.text.StaticLayout
 import android.util.AttributeSet
-import android.util.Log
 import android.util.TypedValue
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
-import androidx.core.graphics.withTranslation
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -21,16 +18,28 @@ class CustomView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    private val TEXT_SIZE = context.spToPx(12)
-    private val COLUMN_WIDTH = context.dpToPx(4)
+    /**
+     * дефолтные значения для цветов и размеров шрифтов
+     */
+    private var TEXT_SIZE = context.spToPx(12)
+    private var COLUMN_WIDTH = context.dpToPx(4)
+    private var LINE_COLOR = Color.BLACK
+    private var DATE_COLOR = Color.WHITE
 
-    private var _listOfValues:List<Int>? = emptyList()
+    private var _listOfValues:MutableList<Int>? = emptyList<Int>().toMutableList()
     private val listOfValues:List<Int> get() = _listOfValues!!
-    private var height = resources.getDimensionPixelSize(R.dimen.custom_view_height)
-    private var width = resources.getDimensionPixelSize(R.dimen.custom_view_width)
-    private var topPoint = 100f
-    private var lineColor = Color.BLACK
-    private var dateColor = Color.WHITE
+
+    /**
+     * дефолтные размеры View
+     */
+    private var height = 0
+    private var width  = 0
+
+    /**
+     * массив для анимации столбцов
+     */
+    private val listOfTopPoints: MutableList<Float> = emptyList<Float>().toMutableList()
+
 
     private val mainPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
@@ -41,14 +50,6 @@ class CustomView @JvmOverloads constructor(
         textSize = TEXT_SIZE
     }
 
-    private val animation = ValueAnimator.ofFloat(0f, 100f).apply {
-        duration = 1000
-        addUpdateListener {
-            topPoint = (it.animatedValue as Float)
-            invalidate()
-        }
-
-    }
 
     private val gestureDetector = GestureDetector(
         context,
@@ -79,15 +80,38 @@ class CustomView @JvmOverloads constructor(
 
     init {
         val typedArray = context.obtainStyledAttributes(attrs, R.styleable.CustomView,defStyleAttr,0)
-        lineColor = typedArray.getColor(R.styleable.CustomView_line_color, lineColor)
-        dateColor = typedArray.getColor(R.styleable.CustomView_date_text_color, dateColor)
-        mainPaint.color = lineColor
-        datePaint.color = dateColor
+        LINE_COLOR = typedArray.getColor(R.styleable.CustomView_line_color, LINE_COLOR)
+        DATE_COLOR = typedArray.getColor(R.styleable.CustomView_date_text_color, DATE_COLOR)
+        mainPaint.color = LINE_COLOR
+        datePaint.color = DATE_COLOR
+        if (typedArray.getDimension(R.styleable.CustomView_line_weight, COLUMN_WIDTH) != 0f){
+            COLUMN_WIDTH = typedArray.getDimension(R.styleable.CustomView_line_weight, COLUMN_WIDTH)
+        }
+        if (typedArray.getDimension(R.styleable.CustomView_values_text_size, TEXT_SIZE) != 0f){
+            mainPaint.textSize = typedArray.getDimension(R.styleable.CustomView_values_text_size, TEXT_SIZE)
+        }
+        if (typedArray.getDimension(R.styleable.CustomView_dates_text_size, TEXT_SIZE) != 0f){
+            datePaint.textSize = typedArray.getDimension(R.styleable.CustomView_dates_text_size, TEXT_SIZE)
+        }
         typedArray.recycle()
     }
 
     fun setData(data:List<Int>){
-        _listOfValues = data
+        _listOfValues = data.toMutableList()
+
+    }
+
+    private fun setTopPoints() {
+        listOfTopPoints.clear()
+        repeat(listOfValues.size){iterator->
+            /**
+             * расчеты размеров столбца:
+             *      находим цену деления столбца, учитывая отступы сверху и снизу (по 50 пикселей)
+             *      задаем отсутп сверху
+             *      находим верхнюю точку столца просчитыая разницу между нижней точкой и размером столбца (значение из массива * цену деления)
+             */
+            listOfTopPoints.add((height-50f) - ((height-100)/100)*listOfValues[iterator])
+        }
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -95,6 +119,7 @@ class CustomView @JvmOverloads constructor(
         height = (MeasureSpec.getSize(widthMeasureSpec) / 2.4).toInt()
         width = MeasureSpec.getSize(widthMeasureSpec)
         setMeasuredDimension(width, height)
+        setTopPoints()
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -110,13 +135,12 @@ class CustomView @JvmOverloads constructor(
              */
             val offset = (width-COLUMN_WIDTH*listOfValues.size)/(listOfValues.size+1)*(iterator+1) + COLUMN_WIDTH*iterator
 
-            Log.d("offset", "offset $offset width $width col width - $COLUMN_WIDTH")
-
             drawOneItem(
                 percent = listOfValues[iterator],
                 start = offset,
                 canvas = canvas,
-                date = date
+                date = date,
+                topPoint = listOfTopPoints[iterator]
             )
 
         }
@@ -126,22 +150,14 @@ class CustomView @JvmOverloads constructor(
         percent:Int, // высота столбика
         start:Float,
         canvas: Canvas,
-        date:String
+        date:String,
+        topPoint: Float
     ){
 
         val progressTextStartPoint = findTextStartPoint(percent.toString(), start, mainPaint)
         val dateTextStartPoint = findTextStartPoint(date, start, datePaint)
 
-        /**
-         * расчеты размеров столбца:
-         *      находим цену деления столбца, учитывая отступы сверху и снизу (по 50 пикселей)
-         *      задаем отсутп сверху
-         *      находим верхнюю точку столца просчитыая разницу между нижней точкой и размером столбца (значение из массива * цену деления)
-         */
-
         val bottom = height-50f
-        topPoint = bottom - ((height-100)/100)*percent
-
 
         /**
          * Отрисовка компонента
@@ -152,7 +168,27 @@ class CustomView @JvmOverloads constructor(
     }
 
     fun animationStart(){
-        animation.start()
+        repeat(listOfTopPoints.size) {iterator ->
+
+            val topPoint = listOfTopPoints[iterator]
+            val topRate = listOfValues[iterator]
+            val animationColumns = ValueAnimator.ofFloat(height - 50f, topPoint).apply {
+                duration = 1500
+                addUpdateListener {
+                    listOfTopPoints[iterator] = it.animatedValue as Float
+                    invalidate()
+                }
+            }
+            val animationRates = ValueAnimator.ofInt(0, topRate).apply {
+                duration = 1500
+                addUpdateListener {
+                    _listOfValues?.set(iterator, it.animatedValue as Int)
+                    invalidate()
+                }
+            }
+            animationColumns.start()
+            animationRates.start()
+        }
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -176,11 +212,6 @@ class CustomView @JvmOverloads constructor(
     private fun Context.spToPx(sp:Int):Float =
         TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp.toFloat(), this.resources.displayMetrics)
 
-    private fun StaticLayout.draw(canvas: Canvas, x:Float, y:Float){
-        canvas.withTranslation(x,y) {
-            draw(this)
-        }
-    }
 
     /**
      * расчеты размеров текста:

@@ -25,6 +25,9 @@
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
             app:line_color="@color/line_color"
+            app:line_weight="4dp"
+            app:values_text_size="13sp"
+            app:dates_text_size="12sp"
             android:backgroundTint="@color/background_color"
             app:date_text_color="@color/date_color"
 
